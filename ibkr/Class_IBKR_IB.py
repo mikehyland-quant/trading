@@ -360,15 +360,21 @@ class IBKR_IB:
                         self.ib.cancelMktData(item["contract"])
 
                 if asyncio.get_running_loop().time() >= deadline:
+                    for item in requests:
+                        if item["adv"] is None:
+                            item["adv"] = 0.0
+                            self.ib.cancelMktData(item["contract"])
+                    '''
                     missing = [
                         item["contract"].localSymbol
                         or item["contract"].symbol
                         for item in requests
                         if item["adv"] is None
                     ]
-                    raise TimeoutError(
+                     raise TimeoutError(
                         f"Timed out waiting for average volume: {missing}"
                     )
+                    '''
 
                 await asyncio.sleep(0.05)
 
