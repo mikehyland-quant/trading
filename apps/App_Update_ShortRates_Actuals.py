@@ -47,9 +47,9 @@ def publish_latest_rates():
 
     # Refers to the workbook that called this function
     wb = xw.Book.caller()
-    ws = wb.sheets["DAILY EXTRAPOLATION"]
+    ws = wb.sheets["OUTPUT"]
 
-    ws.range("P2447").options(
+    ws.range("Y7").options(
         index=False,
         header=False,
     ).value = df
