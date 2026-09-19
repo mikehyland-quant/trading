@@ -26,12 +26,12 @@ CRYPTO_COLS = [ 'my_prod_type',
                 'size_unit_ask',
 
                 'size_unit_bid',
-                'comm_unit_hit_bid',
+                'cf_unit_hit_bid_comm',
                 'cf_unit_hit_bid',
                 'cf_unit_hit_bid_all_in',
                 'cf_unit_lift_ask_all_in',
                 'cf_unit_lift_ask',
-                'comm_unit_lift_ask',
+                'cf_unit_lift_ask_comm',
                 'size_unit_ask',
                 
                 'days_settle_comm',
@@ -130,12 +130,12 @@ def calc_best_of(bo_objs_list):
             # print(obj_.my_fi_name, obj_.cf_unit_hit_bid, obj_.comm_unit_hit_bid, obj_.cf_unit_lift_ask, obj_.comm_unit_lift_ask)
             
             cf = getattr(obj_, 'cf_unit_hit_bid', np.nan)
-            comm = getattr(obj_, 'comm_unit_hit_bid', np.nan)
-            setattr(obj_, 'cf_unit_hit_bid_all_in',  cf  - comm)
+            comm = getattr(obj_, 'cf_unit_hit_bid_comm', np.nan)
+            setattr(obj_, 'cf_unit_hit_bid_all_in',  cf  + comm)
             
             cf = getattr(obj_, 'cf_unit_lift_ask', np.nan)
-            comm = getattr(obj_, 'comm_unit_lift_ask', np.nan)
-            setattr(obj_, 'cf_unit_lift_ask_all_in', cf  - comm)
+            comm = getattr(obj_, 'cf_unit_lift_ask_comm', np.nan)
+            setattr(obj_, 'cf_unit_lift_ask_all_in', cf  + comm)
 
             # print(obj_.my_fi_name, obj_.cf_unit_hit_bid_all_in, obj_.cf_unit_lift_ask_all_in)
         
@@ -161,9 +161,11 @@ def calc_best_of(bo_objs_list):
                 elif 'ask' in attr:
                     tail = '_lift_ask'
 
-                for new_attr in ['comm_unit', 'cf_unit']:
-                    amt = getattr(b_obj, new_attr + tail, np.nan)
-                    setattr(obj, new_attr + tail, amt)
+                amt = getattr(b_obj, 'cf_unit' + tail, np.nan)
+                setattr(obj, 'cf_unit' + tail, amt)
+
+                amt = getattr(b_obj, 'cf_unit' + tail + "_comm", np.nan)
+                setattr(obj, 'cf_unit' + tail + "_comm", amt)
               
     return bo_objs_list
 

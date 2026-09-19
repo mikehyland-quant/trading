@@ -4,7 +4,7 @@ class StatArb_OnTradeExec():
   
     def on_trade_exec(self, filled_obj, filled_trade):  
         if filled_trade.orderStatus.filled == 0:   # this will be the case many times
-            return
+            return 
 
         if filled_obj.strat_on_mkt_data_change:  # then this is first fill
             self._on_first_fill(filled_obj, filled_trade)

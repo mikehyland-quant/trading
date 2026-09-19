@@ -63,7 +63,7 @@ class StatArb_OnMktDataChange():
         else: # g_or_p == "pairs"
             trade_cf = getattr(updated_obj, updated_obj.input_price_attr)
             comm_cf = getattr(updated_obj, updated_obj.input_comm_attr)
-            new_input_amt = trade_cf - comm_cf
+            new_input_amt = trade_cf + comm_cf + updated_obj.div_adj_unit_cf
             # print(updated_obj.my_fi_name, trade_cf, comm_cf, new_input_amt)
             for output_obj in updated_obj.rest_of_objs_list:
                 x = await self._update_trade_details(output_obj, output_obj.buy_or_sell.lower(), new_input_amt)
@@ -82,7 +82,11 @@ class StatArb_OnMktDataChange():
         margin = getattr(output_obj, "profit_margin") # f"{buy_sell}_profit_margin")   
         profitable_unit_cf = margin - new_input_amt  
 
-        [new_order_price, comm] = output_obj.decompose_unit_cf(profitable_unit_cf, 'taker')
+#####
+#       adjust profitable_unit_cf for div_adj_unit_cf
+#####
+
+        [new_order_price, x_comm] = output_obj.decompose_unit_cf(profitable_unit_cf, 'taker')
         new_order_price = output_obj.round_price_to_tick(abs(new_order_price), buy_sell.upper())
 
         # print(new_input_amt, margin, profitable_unit_cf, new_order_price)

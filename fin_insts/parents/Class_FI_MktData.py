@@ -55,11 +55,11 @@ class MktData:
             setattr(self, 'size_unit_'    + bid_ask, np.nan)    
 
         for bid_ask in ['hit_bid', 'join_bid', 'join_ask', 'lift_ask']:   
-            setattr(self, 'cf_mkt_'      + bid_ask, np.nan)        
+            setattr(self, 'cf_order_'    + bid_ask, np.nan)        
             setattr(self, 'cf_unit_'     + bid_ask, np.nan)  
             
-            setattr(self, 'comm_mkt_'    + bid_ask, np.nan)        
-            setattr(self, 'comm_unit_'   + bid_ask, np.nan)
+            setattr(self, 'cf_order_'    + bid_ask + "_comm", np.nan)        
+            setattr(self, 'cf_unit_'     + bid_ask + "_comm", np.nan)  
         
              
     @staticmethod
@@ -112,25 +112,22 @@ class MktData:
                 ts = time.time_ns()
             self.ts_price_bid = ts
                     
-            self.price_raw_bid        =  bid_price
-            self.price_screen_bid     =  self.price_raw_bid    * self.scalar_price_raw_to_screen    
-            self.price_order_bid      =  self.price_screen_bid * self.scalar_size_FIs_per_order 
-            self.price_unit_bid       =  self.price_order_bid  * self.scalar_size_orders_per_unit 
+            self.price_raw_bid          =  bid_price
+            self.price_screen_bid       =  self.price_raw_bid    * self.scalar_price_raw_to_screen    
+            self.price_order_bid        =  self.price_screen_bid * self.scalar_size_FIs_per_order 
+            self.price_unit_bid         =  self.price_order_bid  * self.scalar_size_orders_per_unit 
 
-            self.cf_order_join_bid    = -self.price_order_bid 
-            self.cf_order_hit_bid     =  self.price_order_bid 
+            self.cf_order_join_bid      = -self.price_order_bid 
+            self.cf_order_hit_bid       =  self.price_order_bid 
 
-            self.cf_unit_join_bid     = -self.price_unit_bid 
-            self.cf_unit_hit_bid      =  self.price_unit_bid 
+            self.cf_unit_join_bid       = -self.price_unit_bid 
+            self.cf_unit_hit_bid        =  self.price_unit_bid 
 
-            self.comm_order_join_bid  =  self.calc_comm(self.price_screen_bid, 'maker')
-            self.comm_order_hit_bid   =  self.calc_comm(self.price_screen_bid, 'taker')
+            self.cf_order_join_bid_comm = -self.calc_comm(self.price_screen_bid, 'maker')
+            self.cf_order_hit_bid_comm  = -self.calc_comm(self.price_screen_bid, 'taker')
     
-            self.comm_unit_join_bid   =  self.comm_order_join_bid * self.scalar_size_orders_per_unit
-            self.comm_unit_hit_bid    =  self.comm_order_hit_bid  * self.scalar_size_orders_per_unit
-
-            # self.cf_plus_comm_unit_hit_bid  = self.cf_unit_hit_bid  - self.comm_unit_hit_bid
-            # self.cf_plus_comm_unit_join_bid = self.cf_unit_join_bid - self.comm_unit_join_bid
+            self.cf_unit_join_bid_comm  =  self.comm_order_join_bid * self.scalar_size_orders_per_unit
+            self.cf_unit_hit_bid_comm   =  self.comm_order_hit_bid  * self.scalar_size_orders_per_unit
     
         if pd.notna(ask_price) and ask_price != self.price_raw_ask:
             changed = True
@@ -139,22 +136,22 @@ class MktData:
                 ts = time.time_ns()
             self.ts_price_ask = ts
                      
-            self.price_raw_ask        =  ask_price
-            self.price_screen_ask     =  self.price_raw_ask    * self.scalar_price_raw_to_screen    
-            self.price_order_ask      =  self.price_screen_ask * self.scalar_size_FIs_per_order
-            self.price_unit_ask       =  self.price_order_ask  * self.scalar_size_orders_per_unit
+            self.price_raw_ask          =  ask_price
+            self.price_screen_ask       =  self.price_raw_ask    * self.scalar_price_raw_to_screen    
+            self.price_order_ask        =  self.price_screen_ask * self.scalar_size_FIs_per_order
+            self.price_unit_ask         =  self.price_order_ask  * self.scalar_size_orders_per_unit
 
-            self.cf_order_join_ask    =  self.price_order_ask 
-            self.cf_order_lift_ask    = -self.price_order_ask 
+            self.cf_order_join_ask      =  self.price_order_ask 
+            self.cf_order_lift_ask      = -self.price_order_ask 
 
-            self.cf_unit_join_ask     =  self.price_unit_ask 
-            self.cf_unit_lift_ask     = -self.price_unit_ask 
+            self.cf_unit_join_ask       =  self.price_unit_ask 
+            self.cf_unit_lift_ask       = -self.price_unit_ask 
 
-            self.comm_order_join_ask  =  self.calc_comm(self.price_screen_ask, 'maker')
-            self.comm_order_lift_ask  =  self.calc_comm(self.price_screen_ask, 'taker')
+            self.cf_order_join_ask_comm = -self.calc_comm(self.price_screen_ask, 'maker')
+            self.cf_order_lift_ask_comm = -self.calc_comm(self.price_screen_ask, 'taker')
     
-            self.comm_unit_join_ask   =  self.comm_order_join_ask * self.scalar_size_orders_per_unit
-            self.comm_unit_lift_ask   =  self.comm_order_lift_ask * self.scalar_size_orders_per_unit
+            self.cf_unit_join_ask_comm  =  self.comm_order_join_ask * self.scalar_size_orders_per_unit
+            self.cf_unit_lift_ask_comm  =  self.comm_order_lift_ask * self.scalar_size_orders_per_unit
 
             # self.cf_plus_comm_unit_join_ask = self.cf_unit_join_ask - self.comm_unit_join_ask
             # self.cf_plus_comm_unit_lift_ask = self.cf_unit_lift_ask - self.comm_unit_lift_ask
@@ -227,11 +224,11 @@ class MktData:
             cf = non_unit_cf
         else:
             cf, comm = self.decompose_non_unit_cf(non_unit_cf, maker_taker)
-
+   
         return [cf, comm]
 
 
-    def decompose_non_unit_cf(self, total_cf, maker_taker):
+    def decompose_non_unit_cf(self, non_unit_cf, maker_taker):
     # total_cf must include a sign
 
         type_ = self.comm_type
@@ -239,22 +236,22 @@ class MktData:
 
         if type_ == 'flat_amt':
             comm = -amount
-            cf = total_cf - comm
+            cf = non_unit_cf - comm
         elif type_ == 'flat_pct':
-            if total_cf > 0:
+            if non_unit_cf > 0:
                 amount = -amount
-            cf = total_cf / (1 + amount)
-            comm = total_cf - cf
+            cf = non_unit_cf / (1 + amount)
+            comm = non_unit_cf - cf
         elif type_ == 'flat_pct_with_min':
-            if total_cf > 0:
+            if non_unit_cf > 0:
                 amount = -amount
-            cf = total_cf / (1 + amount)
-            comm = total_cf - cf
+            cf = non_unit_cf / (1 + amount)
+            comm = non_unit_cf - cf
             min_comm = float(self.comm_misc_amount)
             if abs(comm) < min_comm:
                 comm = -min_comm
-                cf = total_cf - comm
+                cf = non_unit_cf - comm
         else:
-            cf = total_cf
+            cf = non_unit_cf
             comm = 0
         return cf, comm

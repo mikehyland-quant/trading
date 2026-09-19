@@ -24,16 +24,26 @@ class StatArb_LimitLimit(StatArb_Parent):
         filled_trade_order_status = filled_trade.orderStatus
 
         avg_filled_price = filled_trade_order_status.avgFillPrice
-        commission = 0.005 # getattr(filled_obj, filled_obj.input_comm_attr))
 
-        avg_filled_cf   = (buy_sell_scalar * avg_filled_price) - commission
+
+
+#####        
+        commission_cf = -0.0055 # getattr(filled_obj, filled_obj.input_comm_attr))
+
+        avg_filled_cf = buy_sell_scalar * avg_filled_price + filled_obj.div_adj_cf + commission_cf
+#####
+
 
         new_input_amt = avg_filled_cf * filled_obj.scalar_size_FIs_per_unit
 
         profitable_unit_cf = filled_obj.profit_margin - new_input_amt
 
         for output_obj in objs_list:
-            [new_order_price, comm] = output_obj.decompose_unit_cf(profitable_unit_cf, 'taker')
+#####
+#           adjust profitable_unit_cf for div_adj_unit_cf
+#####
+
+            [new_order_price, x_comm] = output_obj.decompose_unit_cf(profitable_unit_cf, 'taker')
             new_order_price = output_obj.round_price_to_tick(abs(new_order_price), unfilled_buy_sell_upper)
 
             active_trade = getattr(output_obj, f"active_{unfilled_buy_sell_lower}_trade")
