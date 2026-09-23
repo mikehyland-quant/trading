@@ -105,11 +105,11 @@ class Synthetic(Subscriber):
                 self.cf_unit_join_ask   += obj.cf_unit_join_ask
                 self.cf_unit_lift_ask   += obj.cf_unit_lift_ask
 
-                self.comm_unit_join_bid += obj.comm_unit_join_bid
-                self.comm_unit_hit_bid  += obj.comm_unit_hit_bid
+                self.comm_unit_join_bid += obj.cf_unit_join_bid_comm
+                self.comm_unit_hit_bid  += obj.cf_unit_hit_bid_comm
                            
-                self.comm_unit_join_ask += obj.comm_unit_join_ask
-                self.comm_unit_lift_ask += obj.comm_unit_lift_ask
+                self.comm_unit_join_ask += obj.cf_unit_join_ask_comm
+                self.comm_unit_lift_ask += obj.cf_unit_lift_ask_comm
                                     
             elif scalar == -1:
                 self.price_unit_bid     += -obj.price_unit_ask
@@ -121,11 +121,11 @@ class Synthetic(Subscriber):
                 self.cf_unit_join_ask   += obj.cf_unit_join_bid
                 self.cf_unit_lift_ask   += obj.cf_unit_hit_bid
 
-                self.comm_unit_join_bid += obj.comm_unit_join_ask
-                self.comm_unit_hit_bid  += obj.comm_unit_lift_ask
+                self.comm_unit_join_bid += obj.cf_unit_join_ask_comm
+                self.comm_unit_hit_bid  += obj.cf_unit_lift_ask_comm
                            
-                self.comm_unit_join_ask += obj.comm_unit_join_bid
-                self.comm_unit_lift_ask += obj.comm_unit_hit_bid
+                self.comm_unit_join_ask += obj.cf_unit_join_bid_comm
+                self.comm_unit_lift_ask += obj.cf_unit_hit_bid_comm
             
 
     def update_sizes(self):

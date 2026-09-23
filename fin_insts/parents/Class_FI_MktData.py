@@ -126,8 +126,8 @@ class MktData:
             self.cf_order_join_bid_comm = -self.calc_comm(self.price_screen_bid, 'maker')
             self.cf_order_hit_bid_comm  = -self.calc_comm(self.price_screen_bid, 'taker')
     
-            self.cf_unit_join_bid_comm  =  self.comm_order_join_bid * self.scalar_size_orders_per_unit
-            self.cf_unit_hit_bid_comm   =  self.comm_order_hit_bid  * self.scalar_size_orders_per_unit
+            self.cf_unit_join_bid_comm  =  self.cf_order_join_bid_comm * self.scalar_size_orders_per_unit
+            self.cf_unit_hit_bid_comm   =  self.cf_order_hit_bid_comm  * self.scalar_size_orders_per_unit
     
         if pd.notna(ask_price) and ask_price != self.price_raw_ask:
             changed = True
@@ -150,8 +150,8 @@ class MktData:
             self.cf_order_join_ask_comm = -self.calc_comm(self.price_screen_ask, 'maker')
             self.cf_order_lift_ask_comm = -self.calc_comm(self.price_screen_ask, 'taker')
     
-            self.cf_unit_join_ask_comm  =  self.comm_order_join_ask * self.scalar_size_orders_per_unit
-            self.cf_unit_lift_ask_comm  =  self.comm_order_lift_ask * self.scalar_size_orders_per_unit
+            self.cf_unit_join_ask_comm  =  self.cf_order_join_ask_comm * self.scalar_size_orders_per_unit
+            self.cf_unit_lift_ask_comm  =  self.cf_order_lift_ask_comm * self.scalar_size_orders_per_unit
 
             # self.cf_plus_comm_unit_join_ask = self.cf_unit_join_ask - self.comm_unit_join_ask
             # self.cf_plus_comm_unit_lift_ask = self.cf_unit_lift_ask - self.comm_unit_lift_ask
