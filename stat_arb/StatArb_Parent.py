@@ -65,6 +65,7 @@ class StatArb_Parent(
         order = trade.order
         status = trade.orderStatus
         side = order.action.lower()
+        print(f"side={side}")
 
         if side == "buy":
             self.buy_obj = obj

@@ -6,8 +6,8 @@ class StatArb_OnTradeExec:
 
 
     def on_trade_exec(self, filled_obj, filled_trade):
-        """Ignore unfilled trades and dispatch fills to the appropriate handler."""
-        if filled_trade.orderStatus.filled == 0:
+        """Ignore trades until completely filled and dispatch fills to the appropriate handler."""
+        if filled_trade.orderStatus.status != "Filled":
             return
 
         if filled_obj.strat_on_mkt_data_change:

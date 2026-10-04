@@ -21,7 +21,9 @@ class Strategy_Parent:
             obj.strat_on_mkt_data_change = True
             obj.strat_on_trade_exec = True
             obj.round_price_to_tick = MethodType(type(self).round_price_to_tick, obj)
-            obj.round_size_to_increment = MethodType(type(self).round_size_to_increment, obj)
+            obj.round_size_to_increment = MethodType(
+                type(self).round_size_to_increment, obj
+            )
 
     @classmethod
     def play_fill_sound(cls):
@@ -62,8 +64,9 @@ class Strategy_Parent:
             return None
 
         increment = self.size_increment
+        minimum_size = self.min_size
         rounded = size if increment in (None, 0) else round(size / increment) * increment
-        if self.min_size not in (None, 0) and rounded < self.min_size:
+        if minimum_size not in (None, 0) and rounded < minimum_size:
             return 0.0
         return round(rounded, 10)
 
@@ -85,12 +88,19 @@ class Strategy_Parent:
             if all_or_none is None:
                 all_or_none = False
             return obj.platform_obj.place_limit_order(
-                obj=obj, size=size, buy_sell=buy_sell,
-                price=price, all_or_none=all_or_none,
+                obj=obj,
+                size=size,
+                buy_sell=buy_sell,
+                price=price,
+                all_or_none=all_or_none,
             )
         return obj.platform_obj.modify_limit_order(
-            obj=obj, size=size, buy_sell=buy_sell,
-            trade=trade, price=price, all_or_none=all_or_none,
+            obj=obj,
+            size=size,
+            buy_sell=buy_sell,
+            trade=trade,
+            price=price,
+            all_or_none=all_or_none,
         )
 
     def cancel_order(self, obj, trade):
@@ -99,11 +109,11 @@ class Strategy_Parent:
             obj.platform_obj.cancel_order(trade)
 
     def print_orders(self, active_finished, buy_sell, size, fi_name, price, order_id):
-        if price is None:
-            price = "market"
+        """Print an order summary, labeling orders without a price as market orders."""
+        display_price = "market" if price is None else price
         print(
             f"{active_finished} order: {buy_sell} {size} of {fi_name} "
-            f"at {price} - order_id: {order_id}",
+            f"at {display_price} - order_id: {order_id}",
             "\n",
         )
 
