@@ -45,20 +45,6 @@ class StatArb_OnMktDataChange:
         if not updated_obj.is_mkt_data_valid():
             return
 
-        if self.g_or_p == "group":
-            for output_obj in self.objs_list:
-                await self.update_trade_details(
-                    output_obj,
-                    self.bo_obj.strat_hit_bid_ranked_amts_list[0],
-                    buy_sell="buy",
-                )
-                await self.update_trade_details(
-                    output_obj,
-                    self.bo_obj.strat_lift_ask_ranked_amts_list[0],
-                    buy_sell="sell",
-                )
-            return
-
         trade_cf = getattr(updated_obj, updated_obj.input_price_attr)
         comm_cf = getattr(updated_obj, updated_obj.input_comm_attr)
         input_cf = trade_cf + comm_cf + getattr(updated_obj, "div_adj_unit_cf", 0)
@@ -75,7 +61,7 @@ class StatArb_OnMktDataChange:
         if buy_sell is None:
             buy_sell = output_obj.buy_or_sell.lower()
 
-        active_order_input = getattr(output_obj, f"active_{buy_sell}_order_input")
+        active_order_input = output_obj.active_order_input
         if abs(active_order_input - input_cf) < 1e-9:
             return
 
@@ -87,11 +73,11 @@ class StatArb_OnMktDataChange:
             abs(new_order_price), buy_sell.upper()
         )
 
-        active_order_price = getattr(output_obj, f"active_{buy_sell}_order_price")
+        active_order_price = getattr(output_obj, f"active_order_price")
         if abs(active_order_price - new_order_price) < 1e-9:
             return
 
-        active_trade = getattr(output_obj, f"active_{buy_sell}_trade")
+        active_trade = getattr(output_obj, f"active_trade")
         new_trade = self.update_limit_order(
             obj=output_obj, trade=active_trade, price=new_order_price
         )

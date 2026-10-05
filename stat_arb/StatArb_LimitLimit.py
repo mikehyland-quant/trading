@@ -27,3 +27,4 @@ class StatArb_LimitLimit(StatArb_Parent):
 
         for output_obj in objs_list:
             await self.update_trade_details(output_obj, input_cf)
+ 

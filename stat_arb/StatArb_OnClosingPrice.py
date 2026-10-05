@@ -4,27 +4,24 @@ class StatArb_OnClosingPrice:
     def on_closing_price(self, obj):
         """Disable closing-price handling once all required orders are placed."""
         closing_price = obj.price_screen_close
-        sides = (
-            ("BUY", "SELL")
-            if self.g_or_p == "group"
-            else (obj.buy_or_sell.upper(),)
-        )
+        sides = (obj.buy_or_sell.upper())
+        
         all_orders_placed = True
 
         for side in sides:
             if side == "BUY":
                 price = closing_price * 0.5
-                size = obj.buy_size
             else:
                 price = closing_price * 2.0
-                size = obj.sell_size
 
+            price = closing_price * 0.5 if side == "BUY" else closing_price * 2.0
             price = obj.round_price_to_tick(price, side)
+            
             trade = self.update_limit_order(
                 obj=obj,
                 buy_sell=side,
                 price=price,
-                size=size,
+                size=obj.size
             )
             if trade is None:
                 all_orders_placed = False
