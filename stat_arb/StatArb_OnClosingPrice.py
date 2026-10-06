@@ -4,7 +4,7 @@ class StatArb_OnClosingPrice:
     def on_closing_price(self, obj):
         """Disable closing-price handling once all required orders are placed."""
         closing_price = obj.price_screen_close
-        sides = (obj.buy_or_sell.upper())
+        sides = [obj.buy_or_sell.upper()]
         
         all_orders_placed = True
 

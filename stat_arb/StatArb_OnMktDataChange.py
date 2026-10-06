@@ -58,26 +58,30 @@ class StatArb_OnMktDataChange:
         if not output_obj.is_mkt_data_valid():
             return
 
+        active_trade = output_obj.active_trade
+        active_order_price = output_obj.active_order_price
+        active_order_input = output_obj.active_order_input
+
+        if active_trade is None or active_order_price is None or active_order_input is None :
+            return
+
         if buy_sell is None:
             buy_sell = output_obj.buy_or_sell.lower()
 
-        active_order_input = output_obj.active_order_input
         if abs(active_order_input - input_cf) < 1e-9:
             return
 
         profitable_unit_cf = (
-            output_obj.profit_margin - input_cf - getattr(output_obj, "div_adj_unit_cf", 0)
+            self.profit_margin - input_cf - getattr(output_obj, "div_adj_unit_cf", 0)
         )
         new_order_price, _ = output_obj.decompose_unit_cf(profitable_unit_cf, "taker")
         new_order_price = output_obj.round_price_to_tick(
             abs(new_order_price), buy_sell.upper()
         )
 
-        active_order_price = getattr(output_obj, f"active_order_price")
         if abs(active_order_price - new_order_price) < 1e-9:
             return
 
-        active_trade = getattr(output_obj, f"active_trade")
         new_trade = self.update_limit_order(
             obj=output_obj, trade=active_trade, price=new_order_price
         )

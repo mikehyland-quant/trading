@@ -3,6 +3,7 @@ from copy import error
 import sys
 from pathlib import Path
 
+from ib_insync import obj
 import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -101,12 +102,13 @@ async def main():
 
         while executions_remaining > 0:   
             for obj in objects:
-                profit_margin = current_profit_margin + profit_margin_increment
-                
                 size = obj.remaining_trading_size // executions_remaining
                 obj.size = size
-   
-            strategy = strategy_type(profit_margin, objects) # strategy_input)
+                obj.actively_updating_mkt_data = False
+                obj.need_to_save_closing_price = True
+
+            current_profit_margin = current_profit_margin + profit_margin_increment
+            strategy = strategy_type(current_profit_margin, objects) 
 
             stream_task = asyncio.create_task(ibkr.start_streams(objects))
                         

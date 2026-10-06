@@ -27,13 +27,12 @@ class StatArb_Parent(
             obj.active_order_input = None
             obj.active_order_price = None  
 
-            if self.g_or_p == "pair":
-                obj.buy_or_sell = obj.buy_or_sell.upper()
-                is_buy = obj.buy_or_sell == "BUY"
-                obj.input_price_attr = "cf_unit_lift_ask" if is_buy else "cf_unit_hit_bid"
-                obj.div_adj_cf = -obj.div_adj if is_buy else obj.div_adj
-                obj.div_adj_unit_cf = obj.div_adj_cf * obj.scalar_size_FIs_per_unit
-                obj.input_comm_attr = f"{obj.input_price_attr}_comm"
+            obj.buy_or_sell = obj.buy_or_sell.upper()
+            is_buy = obj.buy_or_sell == "BUY"
+            obj.input_price_attr = "cf_unit_lift_ask" if is_buy else "cf_unit_hit_bid"
+            obj.div_adj_cf = -obj.div_adj if is_buy else obj.div_adj
+            obj.div_adj_unit_cf = obj.div_adj_cf * obj.scalar_size_FIs_per_unit
+            obj.input_comm_attr = f"{obj.input_price_attr}_comm"
                 
 
     def _placed_order_admin(self, obj, trade, input_amt):

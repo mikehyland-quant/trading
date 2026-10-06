@@ -26,8 +26,6 @@ class StatArb_OnTradeExec:
         )
         
         for obj in remaining_objs:
-            order_to_cancel = obj.active_trade
-            self.cancel_order(obj, order_to_cancel)
             obj.strat_on_mkt_data_change = False
 
         filled_obj.strat_on_mkt_data_change = False
@@ -38,8 +36,6 @@ class StatArb_OnTradeExec:
         """Cancel remaining orders on the filled side and disable fill handling."""
 
         for obj in self.objs_list:
-            order_to_cancel = obj.active_trade
-            self.cancel_order(obj, order_to_cancel)
             obj.strat_on_trade_exec = False
 
         self._finished_order_admin(filled_obj, filled_trade)
