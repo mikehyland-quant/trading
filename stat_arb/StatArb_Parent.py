@@ -1,5 +1,3 @@
-from ib_insync import obj
-
 from stat_arb.StatArb_OnClosingPrice import StatArb_OnClosingPrice
 from stat_arb.StatArb_OnMktDataChange import StatArb_OnMktDataChange
 from stat_arb.StatArb_OnTradeExec import StatArb_OnTradeExec
@@ -14,8 +12,7 @@ class StatArb_Parent(
 ):
     """Initialize stat-arb legs and maintain order state and trade results."""
 
-
-    def __init__(self, profit_margin, objs_list): # bo_obj_or_objs_list):
+    def __init__(self, profit_margin, objs_list):
         self.profit_margin = profit_margin
         super().__init__(objs_list)
         self.prepare_on_mkt_data_change()
@@ -25,7 +22,7 @@ class StatArb_Parent(
 
             obj.active_trade = None
             obj.active_order_input = None
-            obj.active_order_price = None  
+            obj.active_order_price = None
 
             obj.buy_or_sell = obj.buy_or_sell.upper()
             is_buy = obj.buy_or_sell == "BUY"
@@ -33,7 +30,6 @@ class StatArb_Parent(
             obj.div_adj_cf = -obj.div_adj if is_buy else obj.div_adj
             obj.div_adj_unit_cf = obj.div_adj_cf * obj.scalar_size_FIs_per_unit
             obj.input_comm_attr = f"{obj.input_price_attr}_comm"
-                
 
     def _placed_order_admin(self, obj, trade, input_amt):
         """Record a placed order and optionally print its details."""
@@ -41,7 +37,7 @@ class StatArb_Parent(
 
         obj.active_trade = trade
         obj.active_order_input = input_amt
-        obj.active_order_price = order.lmtPrice  
+        obj.active_order_price = order.lmtPrice
 
         if self.need_to_print_active_orders:
             self.print_orders(
@@ -53,16 +49,13 @@ class StatArb_Parent(
                 order.orderId,
             )
 
-
     def _finished_order_admin(self, obj, trade):
         """Record a filled leg and finish when no legs need execution handling."""
         obj.active_trade = trade
-        
+
         order = trade.order
         status = trade.orderStatus
-        side = order.action.lower()
-
-        if side == "buy":
+        if order.action.lower() == "buy":
             self.buy_obj = obj
         else:
             self.sell_obj = obj
@@ -75,7 +68,7 @@ class StatArb_Parent(
             self.print_orders(
                 "finished",
                 order.action,
-                status.filled,
+                filled_FIs,
                 obj.my_fi_name,
                 status.avgFillPrice,
                 order.orderId,
@@ -83,7 +76,6 @@ class StatArb_Parent(
 
         if not any(leg.strat_on_trade_exec for leg in self.objs_list):
             self.finish_strategy()
-
 
     def _finalize_results(self):
         """Print filled-leg details, the final spread, and net open units."""
@@ -94,8 +86,7 @@ class StatArb_Parent(
         net_units = 0
         for side, cash_flow_sign in (("buy", -1), ("sell", 1)):
             obj = getattr(self, f"{side}_obj")
-            trade = obj.active_trade
-            status = trade.orderStatus
+            status = obj.active_trade.orderStatus
 
             filled_fis = status.filled
             filled_units = filled_fis * obj.scalar_size_units_per_FI * -cash_flow_sign
@@ -109,16 +100,15 @@ class StatArb_Parent(
 
             print()
             print(
-                obj.my_fi_name,
-                obj.buy_or_sell,
-                ", filled_FIs:", filled_fis,
-                ", filled_units:", f"{filled_units:.2f}",
-                ", avg_FI_price:", f"{avg_price:.3f}",
-                ", unit_cf:", f"{unit_cf:.3f}"
+                f"{obj.my_fi_name} {obj.buy_or_sell} "
+                f", filled_FIs: {filled_fis} "
+                f", filled_units: {filled_units:.2f} "
+                f", avg_FI_price: {avg_price:.3f} "
+                f", unit_cf: {unit_cf:.3f}"
             )
             print()
 
         print(
-            "Final spread: ", f"{final_spread:.3f}",
-            ", Net open units: ", f"{net_units:.2f}", "\n",
+            f"Final spread:  {final_spread:.3f} "
+            f", Net open units:  {net_units:.2f} \n"
         )
