@@ -39,7 +39,7 @@ class FinancialInstrument(MktData):
         self.comm_misc_amount  = self._safe_float(self.my_row.comm_misc)
         
         #----- Assigned by IBKR if appropriate -----
-#self.my_ibkr_id =         # need this for BAGs
+        #self.my_ibkr_id =         # need this for BAGs
         #self.ibkr_contract = 
         #self.ibkr_details = 
      

@@ -16,8 +16,8 @@ STRATEGY_TYPES = {"LimitLimit": StatArb_LimitLimit}
 
 IBKR_PORT = 7496
 
-STRAT_WB_NAME = "2026 Group Trading Inputs.xlsm"
-STRAT_WS_NAME = "ADMIN INPUTS"
+STRAT_WB_NAME = "2026 Pairs Trading.xlsm"
+STRAT_WS_NAME = "INITIAL INPUTS"
 STRAT_TBL_NAME = STRAT_WS_NAME.replace(" ", "_")
 
 
@@ -77,8 +77,8 @@ async def main():
     settings = input_df.iloc[0]
     delay = float(settings["delay"])
     executions_remaining = int(settings["executions"])
-    current_profit_margin = float(settings["initial_profit_margin"])
-    profit_margin_increment = float(settings["profit_margin_increment"])
+    current_profit_margin = float(settings["initial_profit"])
+    profit_margin_increment = float(settings["profit_increment"])
     strategy_type = STRATEGY_TYPES[settings["strat_name"]]
 
     try:
