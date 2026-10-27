@@ -7,6 +7,12 @@ INPUT_WB_NAME    = "2026 Fin Inst Database.xlsx"
 INPUT_WS_NAME    = "MKT DATA STREAMING INPUTS"
 INPUT_TBL_NAME   = INPUT_WS_NAME.replace(" ", "_")
 
+ACTIVE_CATEGORIES = [   "fixed income", 
+                        "sector", 
+                        "industry", 
+                        "corp",
+                        "target"]
+
 CRYPTO_COLS = [ 'my_prod_type',
 
                 'my_fi_name',
@@ -254,10 +260,9 @@ async def main():
     
     db_df       = get_db_df()
     db_df       = db_df[db_df['mkt_data_stream'] == True]
-    crypto_df   = db_df[db_df['grouping'] == 'crypto']
+    crypto_df   = db_df[db_df['category1'] == 'crypto']
     
-    stat_arb_df = db_df[db_df["grouping"].isin(["fixed income", "sector", 
-                                                "industry", "corp", "target"])]
+    stat_arb_df = db_df[db_df["category1"].isin(ACTIVE_CATEGORIES)]
 
     crypto_objs_list   = make_single_leg_fin_insts(crypto_df)
     stat_arb_objs_list = make_single_leg_fin_insts(stat_arb_df)
