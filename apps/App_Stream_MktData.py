@@ -11,7 +11,8 @@ ACTIVE_CATEGORIES = [   "fixed income",
                         "sector", 
                         "industry", 
                         "corp",
-                        "target"]
+                        "target",
+                        "region"]
 
 CRYPTO_COLS = [ 'my_prod_type',
 
@@ -65,7 +66,8 @@ STAT_ARB_COLS = ['my_prod_type',
                  'size_screen_ask',
                  
                  'price_screen_close',
-                 'position']
+                 'position',
+                 'avg_daily_volume']
 
 BO_ATTR_LIST = [('price_unit_bid', max),
                 ('price_unit_ask', min),        
@@ -299,8 +301,12 @@ async def main():
     #for obj in ibkr_objs_list:
     #   print(obj.ibkr_details)
 
+    contracts = [obj.ibkr_contract for obj in stat_arb_objs_list]   
+    adv_df = await ibkr.get_avg_daily_volume_df(contracts)
 
-  
+    for obj in stat_arb_objs_list:
+        matches = adv_df.loc[adv_df["symbol"] == obj.my_fi_name, "avg_daily_volume"]
+        obj.avg_daily_volume = matches.iloc[0] if not matches.empty else None
 
     #''' 
     # insert ibkr BAG instruments here (future_spread, option_spread, option_combo, etc.

@@ -25,6 +25,7 @@ INPUT_COLS = [
     "category1",
     "category2",
     "category3",
+    "pairs_category",
     "pair_name",
     "lo_px_sym",
     "hi_px_sym",
