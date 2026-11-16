@@ -27,10 +27,14 @@ INPUT_COLS = [
     "category3",
     "pairs_category",
     "pair_name",
-    "lo_px_sym",
-    "hi_px_sym",
+    "sym1",
+    "sym2",
     "moving_avg_days",
     "div_method",
+    "neg_entry",
+    "neg_exit",
+    "pos_entry",
+    "pos_exit"
 ]
 
 START_DATE = date(2026, 1, 1)   # update annually
@@ -66,10 +70,13 @@ def load_prep_inputs(io: InputOutput):
 
 
 def attach_dividends(
-    sym: str, prices: pd.DataFrame, divs: pd.DataFrame, method: int
+    sym: str, 
+    prices: pd.DataFrame, 
+    divs: pd.DataFrame, 
+    method: int
 ) -> pd.DataFrame:
     """Attach dividend payments and their cumulative sum to dated prices."""
-    prices = prices.assign(div=0.0, div_cumsum=0.0, div_adj=0.0)
+    prices = prices.assign(div=0.0, div_cumsum=0.0)
     prices = normalize_price_dates(prices)
 
     if method > 0:
@@ -85,36 +92,41 @@ def attach_dividends(
 
     prices["div_cumsum"] = prices["div"].cumsum()
 
+    prices = prices[["div", "div_cumsum", sym]]
+    prices[f"{sym}+div"] = prices["div"] + prices[sym]
+    prices["rtns"] = np.log(prices[f"{sym}+div"] / prices[sym].shift(1))
+    prices["div_adj"] = 0.0
+
     return prices
 
 
 def align_dividend_adjustments(
-    lo_prices: pd.DataFrame,
-    hi_prices: pd.DataFrame,
+    sym1: str,
+    sym2: str,    
+    sym1_prices: pd.DataFrame,
+    sym2_prices: pd.DataFrame,
     divs: pd.DataFrame,
-    lo: str,
-    hi: str,
 ) -> None:
     """Adjust the earlier payer from its ex-date until the other leg's ex-date."""
-    hi_row = divs.loc[divs["my_fi_name"] == hi].iloc[0]
-    lo_row = divs.loc[divs["my_fi_name"] == lo].iloc[0]
+    sym1_row = divs.loc[divs["my_fi_name"] == sym1].iloc[0]
+    sym2_row = divs.loc[divs["my_fi_name"] == sym2].iloc[0]
 
     for div_col, date_col in dividend_columns():
-        hi_date, lo_date = pd.to_datetime(
-            [hi_row[date_col], lo_row[date_col]],
+        sym1_date, sym2_date = pd.to_datetime(
+            [sym1_row[date_col], sym2_row[date_col]],
             errors="coerce",
             format="mixed",
         ).date
 
-        if pd.isna(hi_date) or pd.isna(lo_date) or hi_date == lo_date:
+        if pd.isna(sym1_date) or pd.isna(sym2_date) or sym1_date == sym2_date:
             continue
 
-        if hi_date < lo_date:
-            prices, row = hi_prices, hi_row
-            start, end = hi_date, lo_date
+        if sym1_date > sym2_date:
+            prices, row = sym2_prices, sym2_row
+            start, end = sym2_date, sym1_date
         else:
-            prices, row = lo_prices, lo_row
-            start, end = lo_date, hi_date
+            prices, row = sym1_prices, sym1_row
+            start, end = sym1_date, sym2_date
 
         amount = pd.to_numeric(row[div_col], errors="coerce")
         if pd.notna(amount):
@@ -122,65 +134,10 @@ def align_dividend_adjustments(
             prices.loc[mask, "div_adj"] = float(amount)
 
 
-def calculate_scalars(
-    scalars: pd.DataFrame, prices: pd.DataFrame, divs: pd.DataFrame
-) -> pd.DataFrame:
-    """Calculate each lo/hi pair's multiplier and dividend adjustments."""
-    scalars = scalars.assign(multiplier=np.nan, lo_div_adj=np.nan, hi_div_adj=np.nan)
-    SCALAR_PATH.mkdir(parents=True, exist_ok=True)
-    adjustment_cols = {0: "div", 1: "div_adj", 2: "div_cumsum"}
+def add_stats(df: pd.DataFrame, sym1: str, sym2: str) -> pd.DataFrame:
+    """Add sym1/sym2 log returns and summary statistics to the price export."""
 
-    for idx, row in scalars.iterrows():
-        lo, hi = row["lo_px_sym"], row["hi_px_sym"]
-
-        method = int(row["div_method"])
-        if method not in adjustment_cols:
-            raise ValueError(f"Unsupported dividend method for {lo}/{hi}: {method}")
-        
-        adj_col = adjustment_cols[method]
-
-        lo_prices = attach_dividends(lo, prices[[lo]], divs, method)
-        hi_prices = attach_dividends(hi, prices[[hi]], divs, method)
-
-        if method == 1:
-            align_dividend_adjustments(lo_prices, hi_prices, divs, lo, hi)
-
-        for sym, leg in ((lo, lo_prices), (hi, hi_prices)):
-            leg[f"{sym}*"] = leg[sym] + leg[adj_col]
-            leg.iloc[-1, leg.columns.get_loc(f"{sym}*")] = np.nan
-
-        df = lo_prices.join(hi_prices, lsuffix=f"_{lo}", rsuffix=f"_{hi}")
-        df["ratio*"] = df[f"{hi}*"] / df[f"{lo}*"]
-
-        days = int(row["moving_avg_days"])
-        df["ratio*_ma"] = df["ratio*"].rolling(days).mean()
-
-        df[f"{lo}* x ratio*_ma"] = df[f"{lo}*"] * df["ratio*_ma"].shift(1)
-
-        ratio = df[f"{lo}* x ratio*_ma"] / df[f"{hi}*"]
-        df["ln(unit_prices)"] = np.log(ratio.where(ratio > 0))
-
-        df = add_stats(df, lo, hi)
-
-        path = SCALAR_PATH / f"{lo}_{hi}_{method}.csv"
-        df.rename_axis("date").to_csv(path)
-
-        scalars.at[idx, "lo_div_adj"] = lo_prices[adj_col].iloc[-1]
-        scalars.at[idx, "hi_div_adj"] = hi_prices[adj_col].iloc[-1]
-        
-        # Preserve the existing exclusion of the most recent price row.
-        scalars.at[idx, "multiplier"] = df["ratio*_ma"].iloc[-2]
-
-    return scalars
-
-
-def add_stats(df: pd.DataFrame, lo: str, hi: str) -> pd.DataFrame:
-    """Add lo/hi log returns and summary statistics to the price export."""
-    for name in (lo, hi):
-        prices = df[f"{name}*"]
-        df[f"log_chg({name}*)"] = np.log(prices / prices.shift(1))
-
-    ratio = df["ratio*_ma"]
+    ratio = df["scalar"]
     log_prices = df["ln(unit_prices)"]
 
     ratio_min, ratio_max = ratio.min(), ratio.max()
@@ -188,14 +145,14 @@ def add_stats(df: pd.DataFrame, lo: str, hi: str) -> pd.DataFrame:
 
     stats = {
         "analysis_date": pd.to_datetime(df.index).max().date(),
-        "corr(log_chg*)": df[f"log_chg({lo}*)"].corr(df[f"log_chg({hi}*)"]),
-        "min(ratio*_ma)": ratio_min,
-        "max(ratio*_ma)": ratio_max,
-        "log_diff(ratio*_ma)": np.log(ratio_max / ratio_min),
-        "min(ln(unit_prices))": log_min,
-        "max(ln(unit_prices))": log_max,
-        "diff(ln(unit_prices))": log_max - log_min,
-        "stdev(ln(unit_prices))": log_prices.std(),
+        "corr_of_mkt_rtns": df[f"rtns_{sym1}"].corr(df[f"rtns_{sym2}"]),
+        "scalar_min": ratio_min,
+        "scalar_max": ratio_max,
+        "scalar_range": np.log(ratio_max / ratio_min),
+        "unit_price_ratio_min": log_min,
+        "unit_price_ratio_max": log_max,
+        "unit_price_ratio_range": log_max - log_min,
+        "unit_price_ratio_stdev": log_prices.std(),
     }
 
     df["stat_label"] = None
@@ -208,6 +165,66 @@ def add_stats(df: pd.DataFrame, lo: str, hi: str) -> pd.DataFrame:
     return df
 
 
+def calculate_scalars(
+    scalars: pd.DataFrame, 
+    prices: pd.DataFrame, 
+    divs: pd.DataFrame
+) -> pd.DataFrame:
+    """Calculate each sym1/sym2 pair's scalar and dividend adjustments."""
+    scalars = scalars.assign(corr_of_mkt_rtns=np.nan, scalar_range=np.nan, unit_price_ratio_range=np.nan,
+                             sym1_div_adj=np.nan, sym2_div_adj=np.nan, 
+                             sym1_scalar=np.nan, sym2_scalar=1)
+    SCALAR_PATH.mkdir(parents=True, exist_ok=True)
+    adjustment_cols = {0: "div", 1: "div_adj", 2: "div_cumsum"}
+
+    for idx, row in scalars.iterrows():
+        sym1, sym2 = row["sym1"], row["sym2"]
+
+        method = int(row["div_method"])
+        if method not in adjustment_cols:
+            raise ValueError(f"Unsupported dividend method for {sym1}/{sym2}: {method}")
+        
+        adj_col = adjustment_cols[method]
+
+        sym1_prices = attach_dividends(sym1, prices[[sym1]], divs, method)
+        sym2_prices = attach_dividends(sym2, prices[[sym2]], divs, method)
+
+        if method == 1:
+            align_dividend_adjustments(sym1, sym2, sym1_prices, sym2_prices, divs)
+
+        for sym, leg in ((sym1, sym1_prices), (sym2, sym2_prices)):
+            leg[f"{sym}*"] = leg[sym] + leg[adj_col]
+            leg.iloc[-1, leg.columns.get_loc(f"{sym}*")] = np.nan
+
+        df = sym1_prices.join(sym2_prices, lsuffix=f"_{sym1}", rsuffix=f"_{sym2}")
+        df["ratio*"] = df[f"{sym2}*"] / df[f"{sym1}*"]
+
+        days = int(row["moving_avg_days"])
+        df["scalar"] = df["ratio*"].rolling(days).mean()
+
+        df[f"{sym1}* x scalar"] = df[f"{sym1}*"] * df["scalar"].shift(1)
+
+        ratio = df[f"{sym1}* x scalar"] / df[f"{sym2}*"]
+        df["ln(unit_prices)"] = np.log(ratio.where(ratio > 0))
+
+        df = add_stats(df, sym1, sym2)
+
+        path = SCALAR_PATH / f"{sym1}_{sym2}_{method}.csv"
+        df.rename_axis("date").to_csv(path)
+
+        labels = ["corr_of_mkt_rtns", "scalar_range", "unit_price_ratio_range"]#, "unit_price_ratio_stdev"]
+        for label in labels:
+            scalars.at[idx, label] = df.loc[df["stat_label"] == label, "stat"].iloc[0]
+
+        scalars.at[idx, "sym1_div_adj"] = sym1_prices[adj_col].iloc[-1]
+        scalars.at[idx, "sym2_div_adj"] = sym2_prices[adj_col].iloc[-1]
+        
+        # Preserve the existing exclusion of the most recent price row.
+        scalars.at[idx, "sym1_scalar"] = df["scalar"].iloc[-2]
+
+    return scalars
+
+
 async def stat_arb_scalar_prep() -> None:
     """Read inputs, fetch market data, and write the calculated scalars."""
     io = InputOutput()
@@ -216,7 +233,7 @@ async def stat_arb_scalar_prep() -> None:
     workbook, inputs, scalars = load_prep_inputs(io)
 
     symbols = pd.concat(
-        [scalars["lo_px_sym"], scalars["hi_px_sym"]]
+        [scalars["sym1"], scalars["sym2"]]
     ).dropna()
 
     db = db.loc[db["my_fi_name"].isin(symbols)].copy()

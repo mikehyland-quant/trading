@@ -9,10 +9,6 @@ class StatArb_OnClosingPrice:
         all_orders_placed = True
 
         for side in sides:
-            if side == "BUY":
-                price = closing_price * 0.5
-            else:
-                price = closing_price * 2.0
 
             price = closing_price * 0.5 if side == "BUY" else closing_price * 2.0
             price = obj.round_price_to_tick(price, side)

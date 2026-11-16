@@ -12,7 +12,8 @@ ACTIVE_CATEGORIES = [   "fixed income",
                         "industry", 
                         "corp",
                         "target",
-                        "region"]
+                        "region",
+                        "real estate"]
 
 CRYPTO_COLS = [ 'my_prod_type',
 
